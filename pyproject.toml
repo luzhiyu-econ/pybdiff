@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pybdiff"
+version = "0.1.0"
+description = "Python replication of Stata's bdiff command — tests whether regression coefficients differ across two subgroups"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+  { name = "luzhiyu-econ", email = "zhiyu.lu.econ@icloud.com" },
+]
+requires-python = ">=3.9"
+dependencies = [
+    "pyfixest",
+    "pandas",
+    "numpy",
+    "joblib",
+    "tqdm",
+    "scipy",
+]
+
+[project.urls]
+Homepage = "https://github.com/luzhiyu-econ/pybdiff"
+Repository = "https://github.com/luzhiyu-econ/pybdiff"
+Issues = "https://github.com/luzhiyu-econ/pybdiff/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pybdiff"]
