@@ -1,0 +1,64 @@
+name: Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      NUMBA_NUM_THREADS: "1"
+      RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.28"
+      - name: Use a local project environment
+        run: echo "UV_PROJECT_ENVIRONMENT=$HOME/.venvs/pybdiff" >> "$GITHUB_ENV"
+      - run: uv sync --frozen --group dev
+      - run: uv run --no-sync ruff check src tests examples benchmarks scripts
+      - name: Build and inspect release files
+        run: |
+          uv build
+          uv run --no-sync twine check --strict dist/*.whl dist/*.tar.gz
+          uv run --no-sync python scripts/check_dist.py
+      - name: Install the wheel
+        run: uv pip install --python "$UV_PROJECT_ENVIRONMENT/bin/python" --no-deps --reinstall dist/*.whl
+      - name: Test the installed wheel outside the checkout
+        run: |
+          cd "$RUNNER_TEMP"
+          "$UV_PROJECT_ENVIRONMENT/bin/python" -I "$GITHUB_WORKSPACE/scripts/smoke_install.py"
+          "$UV_PROJECT_ENVIRONMENT/bin/python" -m pytest "$GITHUB_WORKSPACE/tests" -m "not stata"
+      - name: Rebuild and install from the source archive
+        run: |
+          mkdir -p "$RUNNER_TEMP/pybdiff-source" "$RUNNER_TEMP/pybdiff-rebuilt"
+          tar -xzf dist/*.tar.gz -C "$RUNNER_TEMP/pybdiff-source"
+          "$UV_PROJECT_ENVIRONMENT/bin/python" -m build --wheel \
+            --outdir "$RUNNER_TEMP/pybdiff-rebuilt" "$RUNNER_TEMP"/pybdiff-source/*
+          uv pip install --python "$UV_PROJECT_ENVIRONMENT/bin/python" --no-deps \
+            --reinstall "$RUNNER_TEMP"/pybdiff-rebuilt/*.whl
+          cd "$RUNNER_TEMP"
+          "$UV_PROJECT_ENVIRONMENT/bin/python" -I "$GITHUB_WORKSPACE/scripts/smoke_install.py"
+      - name: Save validated release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: distribution-${{ matrix.python-version }}
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error

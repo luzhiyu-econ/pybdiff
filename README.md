@@ -1,81 +1,83 @@
 # pybdiff
 
-Python replication of Stata's `bdiff` command. Tests whether regression coefficients differ across two subgroups using permutation tests, bootstrap tests, or parametric Wald tests — with optional parallel execution.
-
-## Attribution
-
-This package is a Python reimplementation of the Stata command `bdiff` originally written by:
-
-> Lian, Yujun (连玉君). *bdiff*: Coefficient Difference Test across Two Groups.
-> Version 1.04, 24 Nov 2020. Sun Yat-sen University.
-> Email: arlionn@163.com · Blog: https://www.lianxh.cn
-
-All methodological credit belongs to the original author. The bootstrap and permutation procedures follow:
-
-> Efron, B., Tibshirani, R., 1993. *An Introduction to the Bootstrap*. Chapman & Hall.
+Test whether regression coefficients differ between two groups, with parallel
+bootstrap and permutation tests, joint Wald inference, and PPML support.
 
 ## Installation
 
-```bash
+```sh
 pip install pybdiff
 ```
 
-## Quick Start
+Requires Python 3.10 or later. The native engine runs without Stata.
+
+## Quick start
 
 ```python
 from pybdiff import bdiff
 
 result = bdiff(
-    df      = df,
-    group   = "treated",          # column with values 0 and 1
-    formula = "y ~ x1 + x2 | firm + year",
-    vcov    = {"CRV1": "firm"},
-    method  = "permutation",      # "permutation", "bootstrap", or "wald"
-    reps    = 500,
-    seed    = 42,
-    n_jobs  = -1,                 # use all CPU cores
+    df, group="treated", formula="y ~ x1 + x2 | firm + year",
+    estimator="ppml", vcov={"CRV1": "firm"},
+    method="bootstrap", resample_unit="firm",
+    coefficients=["x1"], reps=999, seed=42, n_jobs=4,
 )
 print(result)
 ```
 
-## Methods
+Coefficient differences are **group 0 minus group 1**. Built-in estimators are
+OLS, Poisson/PPML with absorbed fixed effects, Logit, and Probit. Bootstrap and
+permutation support sampling units, strata, and reusable draw plans. Joint Wald
+inference includes covariance between groups when clusters cross both groups.
 
-| Method | Type | Description |
-|--------|------|-------------|
-| `permutation` | Non-parametric | Randomly shuffles group labels (default) |
-| `bootstrap` | Non-parametric | Resamples each group with replacement |
-| `wald` | Parametric | Chi-squared test using block-diagonal VCV |
+See the [usage guide](https://github.com/luzhiyu-econ/pybdiff/blob/v0.2.0/docs/usage.md)
+for options, diagnostics, custom estimators, and exact Stata draw replay.
 
-## Parameters
+## Stata compatibility
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `df` | `pd.DataFrame` | — | Dataset with a 0/1 group column |
-| `group` | `str` | — | Name of the grouping variable |
-| `formula` | `str` | — | PyFixest formula, e.g. `"y ~ x1 + x2 \| fe"` |
-| `vcov` | `str \| dict` | `"iid"` | Variance-covariance type |
-| `method` | `str` | `"permutation"` | Test method |
-| `reps` | `int` | `500` | Resampling iterations (ignored for Wald) |
-| `seed` | `int \| None` | `42` | Master random seed |
-| `n_jobs` | `int` | `1` | Parallel workers (`-1` = all cores) |
-| `verbose` | `bool` | `True` | Print progress bar and results table |
+Use `compatibility="stata"` to reproduce the original bdiff 1.04 resampling
+principle and its smaller-tail probability. Modern inference is the default;
+the two definitions are documented separately. Equal integer seeds in Stata and
+NumPy do not produce equal draws. `make_stata_plan` exports Stata's actual draws;
+`StataEstimator` can execute the original Stata regression command directly.
+These optional integrations require licensed Stata.
 
-## Returns
+Version 0.2 changes inference defaults and fixes problems in 0.1. Read the
+[migration notes](https://github.com/luzhiyu-econ/pybdiff/blob/v0.2.0/CHANGELOG.md)
+before comparing results from different versions.
 
-`pd.DataFrame` indexed by variable name with columns:
+## Measured performance
 
-- `b_group0`, `b_group1` — estimated coefficients per group
-- `diff` — coefficient difference (b0 − b1)
-- `stat` — test statistic (frequency count or chi-squared)
-- `p_value` — two-sided p-value
-- `se_diff` — standard error of the difference (Wald only)
-- `valid_reps` — successful resampling iterations (resampling only)
+![OLS and PPML runtimes: Stata/MP and serial or parallel Python](https://raw.githubusercontent.com/luzhiyu-econ/pybdiff/v0.2.0/docs/benchmarks/runtime.png)
 
-## Dependencies
+Synthetic panel: 20,000 firm-year rows, two regressors, firm/year effects,
+99 row-level permutations, and Stata compatibility mode. Bars show the median
+of three subsequent calls; whiskers show their full range. First-call times are
+reported separately. Each Python worker uses one computational thread.
 
-- [pyfixest](https://github.com/py-econometrics/pyfixest)
-- pandas, numpy, scipy, joblib, tqdm
+| Model | Stata/MP, 8 cores | Python, 8 workers | Speedup |
+|---|---:|---:|---:|
+| OLS | 14.478 s | 3.878 s | 3.73x |
+| PPML | 62.044 s | 8.137 s | 7.62x |
 
-## License
+These are measured command runtimes on an AMD EPYC 7B13 host. The
+[benchmark documentation](https://github.com/luzhiyu-econ/pybdiff/blob/v0.2.0/docs/benchmarks/README.md)
+includes all five configurations per model, first-call times, all 40 timing
+observations, data generation, software versions, and the exact timing scope.
 
-MIT
+## Validation and development
+
+The [validation evidence](https://github.com/luzhiyu-econ/pybdiff/tree/v0.2.0/docs/validation)
+records executed Stata comparisons. GitHub CI tests the installed wheel and a
+wheel rebuilt from the source distribution. Stata comparisons run separately
+with a licensed installation. Setup and reproduction commands are in the
+[development guide](https://github.com/luzhiyu-econ/pybdiff/blob/v0.2.0/docs/development.md).
+
+## Attribution and license
+
+Original Stata command: Yujun Lian (连玉君), *bdiff: Coefficient Difference Test
+across Two Groups*, version 1.04, 24 Nov 2020
+([SSC record](https://ideas.repec.org/c/boc/bocode/s458202.html)).
+Python implementation: Zhiyu Lu. Stata's implementation is not bundled.
+
+MIT license. See [LICENSE](https://github.com/luzhiyu-econ/pybdiff/blob/v0.2.0/LICENSE).

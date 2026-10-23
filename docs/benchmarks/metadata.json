@@ -1,0 +1,51 @@
+{
+  "observations": 20000,
+  "firms": 1000,
+  "years": 20,
+  "reps": 99,
+  "trials": 3,
+  "method": "permutation",
+  "compatibility": "stata",
+  "sampling_unit": "row",
+  "fixed_effects": [
+    "firm",
+    "year"
+  ],
+  "covariates": [
+    "x",
+    "z"
+  ],
+  "case_outcomes": {
+    "OLS": "y_linear",
+    "PPML": "y"
+  },
+  "seed": 20261023,
+  "cpu": "AMD EPYC 7B13 64-Core Processor",
+  "logical_cpus": 128,
+  "load_average_at_finish": [
+    24.7607421875,
+    13.02392578125,
+    17.7490234375
+  ],
+  "platform": "Linux",
+  "versions": {
+    "pybdiff": "0.2.0",
+    "pyfixest": "0.60.0",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3"
+  },
+  "max_observed_difference_error": {
+    "OLS": 1.9992688060632702e-16,
+    "PPML": 8.743006318923108e-16
+  },
+  "timing": "Full command after data load; Python includes worker startup. Trial 0 is first call; medians use subsequent trials in the same process.",
+  "random_draws": "Engine-specific RNGs; identical data, model, method, and draw count. Exact draw equivalence is tested separately with exported Stata plans.",
+  "stata_baseline_cores": 8,
+  "python_threads_per_worker": 1,
+  "stata_versions": {
+    "stata": "StataNow 19.5",
+    "bdiff": "*! Version 1.04  24Nov2020",
+    "reghdfe": "*! version 6.12.3 08aug2023",
+    "ppmlhdfe": "*! version 2.3.3 02nov2025"
+  }
+}

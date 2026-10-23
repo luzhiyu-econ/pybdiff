@@ -1,0 +1,4 @@
+metric,max_absolute_error
+diff,5.229594535194337e-12
+se_diff,1.4779288903810084e-12
+p_value,2.020605904817785e-14
