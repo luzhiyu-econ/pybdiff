@@ -1,0 +1,13 @@
+{
+  "exit_code": 0,
+  "collected_tests": 61,
+  "failed_tests": 0,
+  "comparison_records": 63,
+  "data_scope": "deterministic synthetic samples and Stata nlsw88 help examples",
+  "versions": {
+    "pybdiff": "0.2.0",
+    "pyfixest": "0.60.0",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3"
+  }
+}

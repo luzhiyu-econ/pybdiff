@@ -1,30 +1,55 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
 name = "pybdiff"
-version = "0.1.0"
-description = "Python replication of Stata's bdiff command — tests whether regression coefficients differ across two subgroups"
+dynamic = ["version"]
+description = "Reproducible coefficient-difference tests with Stata compatibility and PPML"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
   { name = "luzhiyu-econ", email = "zhiyu.lu.econ@icloud.com" },
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "pyfixest",
-    "pandas",
-    "numpy",
-    "joblib",
-    "tqdm",
-    "scipy",
+    "pyfixest>=0.60,<0.61",
+    "pandas>=2.2,<3",
+    "numpy>=1.26",
+    "joblib>=1.4",
+    "threadpoolctl>=3.5",
+    "scipy>=1.12",
 ]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.11", "build>=1.2", "twine>=6"]
+benchmark = ["matplotlib>=3.8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["stata: requires a licensed Stata installation"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP"]
 
 [project.urls]
 Homepage = "https://github.com/luzhiyu-econ/pybdiff"
 Repository = "https://github.com/luzhiyu-econ/pybdiff"
 Issues = "https://github.com/luzhiyu-econ/pybdiff/issues"
+Documentation = "https://github.com/luzhiyu-econ/pybdiff/blob/main/docs/usage.md"
+
+[tool.hatch.version]
+path = "src/pybdiff/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pybdiff"]
+
+[tool.hatch.build.targets.sdist]
+only-include = [
+    "src/pybdiff", "tests", "examples/quickstart.py",
+    "pyproject.toml", "README.md", "CHANGELOG.md", "LICENSE",
+]
